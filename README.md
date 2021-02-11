@@ -1,3 +1,6 @@
+# MODIFIED VERSION OF [LIVE GO](https://github.com/gwuhaolin/livego), I HIGHLY ADVISE YOU USE THEIR BRANCHES RATHER THAN THIS.
+
+
 <p align='center'>
     <img src='./logo.png' width='200px' height='80px'/>
 </p>
