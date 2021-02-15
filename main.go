@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/gwuhaolin/livego/configure"
-	"github.com/gwuhaolin/livego/protocol/api"
-	"github.com/gwuhaolin/livego/protocol/hls"
-	"github.com/gwuhaolin/livego/protocol/httpflv"
-	"github.com/gwuhaolin/livego/protocol/rtmp"
+	"github.com/SpooderfyBot/live/configure"
+	"github.com/SpooderfyBot/live/protocol/api"
+	"github.com/SpooderfyBot/live/protocol/hls"
+	"github.com/SpooderfyBot/live/protocol/httpflv"
+	"github.com/SpooderfyBot/live/protocol/rtmp"
 	"net"
 	"path"
 	"runtime"
@@ -125,7 +125,7 @@ func main() {
 		}
 	}()
 
-	log.Infof(`LiveGo: Spooderfy Edition!`, )
+	log.Infof(`LiveGo: Spooderfy Edition!`)
 
 	apps := configure.Applications{}
 	configure.Config.UnmarshalKey("server", &apps)
