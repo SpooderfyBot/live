@@ -3,11 +3,11 @@ package rtmprelay
 import (
 	"bytes"
 	"fmt"
-	"github.com/gwuhaolin/livego/av"
+	"github.com/SpooderfyBot/live/av"
 	"io"
 
-	"github.com/gwuhaolin/livego/protocol/amf"
-	"github.com/gwuhaolin/livego/protocol/rtmp/core"
+	"github.com/SpooderfyBot/live/protocol/amf"
+	"github.com/SpooderfyBot/live/protocol/rtmp/core"
 
 	log "github.com/sirupsen/logrus"
 )

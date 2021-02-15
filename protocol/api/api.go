@@ -6,10 +6,10 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/gwuhaolin/livego/av"
-	"github.com/gwuhaolin/livego/configure"
-	"github.com/gwuhaolin/livego/protocol/rtmp"
-	"github.com/gwuhaolin/livego/protocol/rtmp/rtmprelay"
+	"github.com/SpooderfyBot/live/av"
+	"github.com/SpooderfyBot/live/configure"
+	"github.com/SpooderfyBot/live/protocol/rtmp"
+	"github.com/SpooderfyBot/live/protocol/rtmp/rtmprelay"
 
 	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	"github.com/dgrijalva/jwt-go"
@@ -100,30 +100,33 @@ func JWTMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Server) Serve(l net.Listener) error {
+func (server *Server) Serve(l net.Listener) error {
 	mux := http.NewServeMux()
 
 	mux.Handle("/statics/", http.StripPrefix("/statics/", http.FileServer(http.Dir("statics"))))
 
 	mux.HandleFunc("/control/push", func(w http.ResponseWriter, r *http.Request) {
-		s.handlePush(w, r)
+		server.handlePush(w, r)
 	})
 	mux.HandleFunc("/control/pull", func(w http.ResponseWriter, r *http.Request) {
-		s.handlePull(w, r)
+		server.handlePull(w, r)
 	})
 	mux.HandleFunc("/control/get", func(w http.ResponseWriter, r *http.Request) {
-		s.handleGet(w, r)
+		server.handleGet(w, r)
 	})
 	mux.HandleFunc("/control/reset", func(w http.ResponseWriter, r *http.Request) {
-		s.handleReset(w, r)
+		server.handleReset(w, r)
 	})
 	mux.HandleFunc("/control/delete", func(w http.ResponseWriter, r *http.Request) {
-		s.handleDelete(w, r)
+		server.handleDelete(w, r)
 	})
-	mux.HandleFunc("/stat/livestat", func(w http.ResponseWriter, r *http.Request) {
-		s.GetLiveStatics(w, r)
+	mux.HandleFunc("/stats/livestats", func(w http.ResponseWriter, r *http.Request) {
+		server.GetLiveStatics(w, r)
 	})
-	http.Serve(l, JWTMiddleware(mux))
+	mux.HandleFunc("/stats/livestat", func(w http.ResponseWriter, r *http.Request) {
+		server.GetLiveStat(w, r)
+	})
+	_ = http.Serve(l, JWTMiddleware(mux))
 	return nil
 }
 
@@ -132,7 +135,7 @@ type stream struct {
 	Url             string `json:"url"`
 	StreamId        uint32 `json:"stream_id"`
 	VideoTotalBytes uint64 `json:"video_total_bytes"`
-	VideoSpeed      uint64 `json:"video_speed"`
+	VideoSpeed      uint64 `json:"video_speed"` // todo maybe rename this??? to bitrate
 	AudioTotalBytes uint64 `json:"audio_total_bytes"`
 	AudioSpeed      uint64 `json:"audio_speed"`
 }
@@ -142,7 +145,69 @@ type streams struct {
 	Players    []stream `json:"players"`
 }
 
-//http://127.0.0.1:8090/stat/livestat
+// http://127.0.0.1:8090/stats/livestat?room=xyz
+func (server *Server) GetLiveStat(w http.ResponseWriter, req *http.Request) {
+	res := &Response{
+		w:      w,
+		Data:   nil,
+		Status: 200,
+	}
+
+	defer res.SendJson()
+
+	rtmpStream := server.handler.(*rtmp.RtmpStream)
+	if rtmpStream == nil {
+		res.Status = 500
+		res.Data = "Get rtmp stream information error"
+		return
+	}
+
+	if req.ParseForm() != nil {
+		res.Status = 500
+		res.Data = "Failed to parse form"
+		return
+	}
+
+	room := req.Form.Get("room")
+	key := fmt.Sprintf("live/%s", room)
+
+	s, ok := rtmpStream.GetStream(key)
+	if !ok {
+		res.Status = 404
+		res.Data = "No room was found"
+		return
+	}
+
+	reader := s.GetReader()
+	if reader == nil {
+		res.Status = 500
+		res.Data = "This room has no readers"
+		return
+	}
+
+	switch s.GetReader().(type) {
+	case *rtmp.VirReader:
+		v := s.GetReader().(*rtmp.VirReader)
+		msg := stream{
+			key,
+			v.Info().URL,
+			v.ReadBWInfo.StreamId,
+			v.ReadBWInfo.VideoDatainBytes,
+			v.ReadBWInfo.VideoSpeedInBytesperMS,
+			v.ReadBWInfo.AudioDatainBytes,
+			v.ReadBWInfo.AudioSpeedInBytesperMS,
+		}
+
+		res.Data = msg
+		return
+	}
+
+	res.Status = 500
+	res.Data = "Reader returned by RTMP stream was not virtual reader."
+
+}
+
+// http://127.0.0.1:8090/stats/livestats
 func (server *Server) GetLiveStatics(w http.ResponseWriter, req *http.Request) {
 	res := &Response{
 		w:      w,
@@ -195,12 +260,12 @@ func (server *Server) GetLiveStatics(w http.ResponseWriter, req *http.Request) {
 		return true
 	})
 
-	//resp, _ := json.Marshal(msgs)
+	// resp, _ := json.Marshal(msgs)
 	res.Data = msgs
 }
 
-//http://127.0.0.1:8090/control/pull?&oper=start&app=live&name=123456&url=rtmp://192.168.16.136/live/123456
-func (s *Server) handlePull(w http.ResponseWriter, req *http.Request) {
+// http://127.0.0.1:8090/control/pull?&oper=start&app=live&name=123456&url=rtmp://192.168.16.136/live/123456
+func (server *Server) handlePull(w http.ResponseWriter, req *http.Request) {
 	var retString string
 	var err error
 
@@ -230,12 +295,12 @@ func (s *Server) handlePull(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	remoteurl := "rtmp://127.0.0.1" + s.rtmpAddr + "/" + app + "/" + name
+	remoteurl := "rtmp://127.0.0.1" + server.rtmpAddr + "/" + app + "/" + name
 	localurl := url
 
 	keyString := "pull:" + app + "/" + name
 	if oper == "stop" {
-		pullRtmprelay, found := s.session[keyString]
+		pullRtmprelay, found := server.session[keyString]
 
 		if !found {
 			retString = fmt.Sprintf("session key[%s] not exist, please check it again.", keyString)
@@ -246,7 +311,7 @@ func (s *Server) handlePull(w http.ResponseWriter, req *http.Request) {
 		log.Debugf("rtmprelay stop push %s from %s", remoteurl, localurl)
 		pullRtmprelay.Stop()
 
-		delete(s.session, keyString)
+		delete(server.session, keyString)
 		retString = fmt.Sprintf("<h1>push url stop %s ok</h1></br>", url)
 		res.Status = 400
 		res.Data = retString
@@ -258,7 +323,7 @@ func (s *Server) handlePull(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			retString = fmt.Sprintf("push error=%v", err)
 		} else {
-			s.session[keyString] = pullRtmprelay
+			server.session[keyString] = pullRtmprelay
 			retString = fmt.Sprintf("<h1>push url start %s ok</h1></br>", url)
 		}
 		res.Status = 400
@@ -267,8 +332,8 @@ func (s *Server) handlePull(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-//http://127.0.0.1:8090/control/push?&oper=start&app=live&name=123456&url=rtmp://192.168.16.136/live/123456
-func (s *Server) handlePush(w http.ResponseWriter, req *http.Request) {
+// http://127.0.0.1:8090/control/push?&oper=start&app=live&name=123456&url=rtmp://192.168.16.136/live/123456
+func (server *Server) handlePush(w http.ResponseWriter, req *http.Request) {
 	var retString string
 	var err error
 
@@ -296,12 +361,12 @@ func (s *Server) handlePush(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	localurl := "rtmp://127.0.0.1" + s.rtmpAddr + "/" + app + "/" + name
+	localurl := "rtmp://127.0.0.1" + server.rtmpAddr + "/" + app + "/" + name
 	remoteurl := url
 
 	keyString := "push:" + app + "/" + name
 	if oper == "stop" {
-		pushRtmprelay, found := s.session[keyString]
+		pushRtmprelay, found := server.session[keyString]
 		if !found {
 			retString = fmt.Sprintf("<h1>session key[%s] not exist, please check it again.</h1>", keyString)
 			res.Data = retString
@@ -310,7 +375,7 @@ func (s *Server) handlePush(w http.ResponseWriter, req *http.Request) {
 		log.Debugf("rtmprelay stop push %s from %s", remoteurl, localurl)
 		pushRtmprelay.Stop()
 
-		delete(s.session, keyString)
+		delete(server.session, keyString)
 		retString = fmt.Sprintf("<h1>push url stop %s ok</h1></br>", url)
 		res.Data = retString
 		log.Debugf("push stop return %s", retString)
@@ -322,7 +387,7 @@ func (s *Server) handlePush(w http.ResponseWriter, req *http.Request) {
 			retString = fmt.Sprintf("push error=%v", err)
 		} else {
 			retString = fmt.Sprintf("<h1>push url start %s ok</h1></br>", url)
-			s.session[keyString] = pushRtmprelay
+			server.session[keyString] = pushRtmprelay
 		}
 
 		res.Data = retString
@@ -330,8 +395,8 @@ func (s *Server) handlePush(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-//http://127.0.0.1:8090/control/reset?room=ROOM_NAME
-func (s *Server) handleReset(w http.ResponseWriter, r *http.Request) {
+// http://127.0.0.1:8090/control/reset?room=ROOM_NAME
+func (server *Server) handleReset(w http.ResponseWriter, r *http.Request) {
 	res := &Response{
 		w:      w,
 		Data:   nil,
@@ -362,8 +427,8 @@ func (s *Server) handleReset(w http.ResponseWriter, r *http.Request) {
 	res.Data = msg
 }
 
-//http://127.0.0.1:8090/control/get?room=ROOM_NAME
-func (s *Server) handleGet(w http.ResponseWriter, r *http.Request) {
+// http://127.0.0.1:8090/control/get?room=ROOM_NAME
+func (server *Server) handleGet(w http.ResponseWriter, r *http.Request) {
 	res := &Response{
 		w:      w,
 		Data:   nil,
@@ -394,7 +459,7 @@ func (s *Server) handleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 //http://127.0.0.1:8090/control/delete?room=ROOM_NAME
-func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
+func (server *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
 	res := &Response{
 		w:      w,
 		Data:   nil,
@@ -415,6 +480,24 @@ func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
 		res.Data = "url: /control/delete?room=<ROOM_NAME>"
 		return
 	}
+
+	rtmpStream := server.handler.(*rtmp.RtmpStream)
+	if rtmpStream == nil {
+		res.Status = 500
+		res.Data = "Get rtmp stream information error"
+		return
+	}
+
+	key := fmt.Sprintf("live/%s", room)
+	s, ok := rtmpStream.GetStream(key)
+	if !ok {
+		res.Status = 404
+		res.Data = "No room was found"
+		return
+	}
+
+	fmt.Println("Closing streams")
+	s.CloseAndComplete()
 
 	if configure.RoomKeys.DeleteChannel(room) {
 		res.Data = "Ok"

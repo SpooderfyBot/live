@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gwuhaolin/livego/utils/uid"
+	"github.com/SpooderfyBot/live/utils/uid"
 
-	"github.com/gwuhaolin/livego/av"
-	"github.com/gwuhaolin/livego/configure"
-	"github.com/gwuhaolin/livego/container/flv"
-	"github.com/gwuhaolin/livego/protocol/rtmp/core"
+	"github.com/SpooderfyBot/live/av"
+	"github.com/SpooderfyBot/live/configure"
+	"github.com/SpooderfyBot/live/container/flv"
+	"github.com/SpooderfyBot/live/protocol/rtmp/core"
 
 	log "github.com/sirupsen/logrus"
 )

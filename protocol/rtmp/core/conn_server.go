@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/gwuhaolin/livego/av"
-	"github.com/gwuhaolin/livego/protocol/amf"
+	"github.com/SpooderfyBot/live/av"
+	"github.com/SpooderfyBot/live/protocol/amf"
 
 	log "github.com/sirupsen/logrus"
 )

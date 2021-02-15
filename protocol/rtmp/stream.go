@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gwuhaolin/livego/av"
-	"github.com/gwuhaolin/livego/protocol/rtmp/cache"
-	"github.com/gwuhaolin/livego/protocol/rtmp/rtmprelay"
+	"github.com/SpooderfyBot/live/av"
+	"github.com/SpooderfyBot/live/protocol/rtmp/cache"
+	"github.com/SpooderfyBot/live/protocol/rtmp/rtmprelay"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -18,7 +18,7 @@ var (
 )
 
 type RtmpStream struct {
-	streams *sync.Map //key
+	streams *sync.Map // key
 }
 
 func NewRtmpStream() *RtmpStream {
@@ -72,6 +72,16 @@ func (rs *RtmpStream) HandleWriter(w av.WriteCloser) {
 
 func (rs *RtmpStream) GetStreams() *sync.Map {
 	return rs.streams
+}
+
+func (rs *RtmpStream) GetStream(key string) (value *Stream, ok bool) {
+	stream, ok := rs.streams.Load(key)
+	if ok {
+		typedStream := stream.(*Stream)
+		return typedStream, ok
+	} else {
+		return nil, ok
+	}
 }
 
 func (rs *RtmpStream) CheckAlive() {
@@ -410,4 +420,8 @@ func (s *Stream) closeInter() {
 		}
 		return true
 	})
+}
+
+func (s *Stream) CloseAndComplete() {
+	s.closeInter()
 }
