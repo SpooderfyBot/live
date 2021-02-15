@@ -34,7 +34,7 @@ Simple and efficient live broadcast server:
 After directly downloading the compiled [binary file](https://github.com/SpooderfyBot/live/releases), execute it on the command line.
 
 #### Boot from Docker
-Run `docker run -p 1935:1935 -p 7001:7001 -p 7002:7002 -p 8090:8090 -d gwuhaolin/livego` to start
+Run `docker run -p 1935:1935 -p 7001:7001 -p 7002:7002 -p 8090:8090 -d chillfish8/live` to start
 
 #### Compile from source
 1. Download the source code `git clone https://github.com/SpooderfyBot/live.git`
