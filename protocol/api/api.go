@@ -496,7 +496,7 @@ func (server *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Closing streams")
+	s.TransStop()
 	s.CloseAndComplete()
 
 	if configure.RoomKeys.DeleteChannel(room) {
