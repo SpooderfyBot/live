@@ -30,6 +30,7 @@ type Application struct {
 	Hls        bool     `mapstructure:"hls"`
 	Flv        bool     `mapstructure:"flv"`
 	Api        bool     `mapstructure:"api"`
+	ApiKey     string   `mapstructure:"api_key"`
 	StaticPush []string `mapstructure:"static_push"`
 }
 
@@ -78,6 +79,7 @@ var defaultConf = ServerCfg{
 		Hls:        true,
 		Flv:        true,
 		Api:        true,
+		ApiKey:     "",
 		StaticPush: nil,
 	}},
 }

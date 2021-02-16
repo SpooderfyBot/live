@@ -86,7 +86,7 @@ func startHTTPFlv(stream *rtmp.RtmpStream) {
 	}()
 }
 
-func startAPI(stream *rtmp.RtmpStream) {
+func startAPI(stream *rtmp.RtmpStream, apiKey string) {
 	apiAddr := configure.Config.GetString("api_addr")
 
 	if apiAddr != "" {
@@ -102,7 +102,7 @@ func startAPI(stream *rtmp.RtmpStream) {
 				}
 			}()
 			log.Info("HTTP-API listen On ", apiAddr)
-			opServer.Serve(opListen)
+			_ = opServer.Serve(opListen, apiKey)
 		}()
 	}
 }
@@ -139,7 +139,7 @@ func main() {
 			startHTTPFlv(stream)
 		}
 		if app.Api {
-			startAPI(stream)
+			startAPI(stream, app.ApiKey)
 		}
 
 		startRtmp(stream, hlsServer)

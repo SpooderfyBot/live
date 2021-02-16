@@ -100,30 +100,65 @@ func JWTMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (server *Server) Serve(l net.Listener) error {
+func checkAuth(expectedKey string, w http.ResponseWriter, r *http.Request) bool {
+	if r.Header.Get("authorization") != expectedKey {
+		res := &Response{
+			w:      w,
+			Data:   "Unauthorized",
+			Status: 401,
+		}
+		_, _ = res.SendJson()
+		return true
+	}
+
+	return false
+}
+
+func (server *Server) Serve(l net.Listener, apiKey string) error {
 	mux := http.NewServeMux()
 
 	mux.Handle("/statics/", http.StripPrefix("/statics/", http.FileServer(http.Dir("statics"))))
 
 	mux.HandleFunc("/control/push", func(w http.ResponseWriter, r *http.Request) {
+		if checkAuth(apiKey, w, r) {
+			return
+		}
 		server.handlePush(w, r)
 	})
 	mux.HandleFunc("/control/pull", func(w http.ResponseWriter, r *http.Request) {
+		if checkAuth(apiKey, w, r) {
+			return
+		}
 		server.handlePull(w, r)
 	})
 	mux.HandleFunc("/control/get", func(w http.ResponseWriter, r *http.Request) {
+		if checkAuth(apiKey, w, r) {
+			return
+		}
 		server.handleGet(w, r)
 	})
 	mux.HandleFunc("/control/reset", func(w http.ResponseWriter, r *http.Request) {
+		if checkAuth(apiKey, w, r) {
+			return
+		}
 		server.handleReset(w, r)
 	})
 	mux.HandleFunc("/control/delete", func(w http.ResponseWriter, r *http.Request) {
+		if checkAuth(apiKey, w, r) {
+			return
+		}
 		server.handleDelete(w, r)
 	})
 	mux.HandleFunc("/stats/livestats", func(w http.ResponseWriter, r *http.Request) {
+		if checkAuth(apiKey, w, r) {
+			return
+		}
 		server.GetLiveStatics(w, r)
 	})
 	mux.HandleFunc("/stats/livestat", func(w http.ResponseWriter, r *http.Request) {
+		if checkAuth(apiKey, w, r) {
+			return
+		}
 		server.GetLiveStat(w, r)
 	})
 	_ = http.Serve(l, JWTMiddleware(mux))
