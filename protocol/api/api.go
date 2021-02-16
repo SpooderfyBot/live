@@ -115,6 +115,8 @@ func checkAuth(expectedKey string, w http.ResponseWriter, r *http.Request) bool 
 }
 
 func (server *Server) Serve(l net.Listener, apiKey string) error {
+	fmt.Printf("Using API KEY: %s", apiKey)
+
 	mux := http.NewServeMux()
 
 	mux.Handle("/statics/", http.StripPrefix("/statics/", http.FileServer(http.Dir("statics"))))
