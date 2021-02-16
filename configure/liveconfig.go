@@ -3,7 +3,6 @@ package configure
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"strings"
 
 	"github.com/kr/pretty"
@@ -31,7 +30,6 @@ type Application struct {
 	Hls        bool     `mapstructure:"hls"`
 	Flv        bool     `mapstructure:"flv"`
 	Api        bool     `mapstructure:"api"`
-	ApiKey     string   `mapstructure:"api_key"`
 	StaticPush []string `mapstructure:"static_push"`
 }
 
@@ -80,7 +78,6 @@ var defaultConf = ServerCfg{
 		Hls:        true,
 		Flv:        true,
 		Api:        true,
-		ApiKey:     os.Getenv("API_KEY"),
 		StaticPush: nil,
 	}},
 }

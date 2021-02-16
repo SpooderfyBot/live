@@ -8,6 +8,7 @@ import (
 	"github.com/SpooderfyBot/live/protocol/httpflv"
 	"github.com/SpooderfyBot/live/protocol/rtmp"
 	"net"
+	"os"
 	"path"
 	"runtime"
 	"time"
@@ -139,7 +140,7 @@ func main() {
 			startHTTPFlv(stream)
 		}
 		if app.Api {
-			startAPI(stream, app.ApiKey)
+			startAPI(stream, os.Getenv("API_KEY"))
 		}
 
 		startRtmp(stream, hlsServer)
