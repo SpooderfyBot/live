@@ -3,6 +3,7 @@ package configure
 import (
 	"bytes"
 	"encoding/json"
+	"os"
 	"strings"
 
 	"github.com/kr/pretty"
@@ -79,7 +80,7 @@ var defaultConf = ServerCfg{
 		Hls:        true,
 		Flv:        true,
 		Api:        true,
-		ApiKey:     "",
+		ApiKey:     os.Getenv("API_KEY"),
 		StaticPush: nil,
 	}},
 }
